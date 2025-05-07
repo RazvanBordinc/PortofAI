@@ -1,0 +1,75 @@
+services:
+  # ASP.NET Core Web API
+  backend:
+    build:
+      context: ./Portfolio-server
+      dockerfile: Dockerfile
+    ports:
+      - "5189:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Redis=${UPSTASH_REDIS_CONNECTION_STRING:-redis:6379,password=VeryPasswordStrongIs2}
+      - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GeminiApi__ApiKey=${GOOGLE_API_KEY}
+      - GeminiApi__ModelName=gemini-2.0-flash
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SendGrid__ApiKey=${SENDGRID_API_KEY}
+      - SendGrid__FromEmail=bordincrazvan2004@gmail.com
+      - SendGrid__FromName=Razvan Bordinc Portfolio
+      - SendGrid__ToEmail=bordincrazvan2004@gmail.com
+      - SendGrid__ToName=Razvan Bordinc
+      - SendGrid__EmailRateLimit=2
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Redis for local development only
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: >
+      --requirepass VeryPasswordStrongIs2
+      --save 60 1
+      --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "VeryPasswordStrongIs2", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Next.js frontend
+  frontend:
+    build:
+      context: ./portfolio-client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5189
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge
