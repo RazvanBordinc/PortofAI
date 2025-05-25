@@ -42,7 +42,6 @@ export default function ChatInterface() {
 
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState("NORMAL");
