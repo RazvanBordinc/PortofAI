@@ -124,56 +124,14 @@ export default function ChatInterface() {
       console.log(...args);
     }
   };
-  // Add this function near the top of the file
+  // Deduplication is now handled entirely by the backend
+  // Keeping this function commented for reference
+  /*
   function deduplicate(text) {
-    if (!text || text.length < 30) return text;
-
-    // Fix duplicate sentences at the end of text
-    let cleanedText = text;
-
-    // Check for duplicate sentences (more thorough method)
-    const sentences = cleanedText.split(/([.!?]\s+)/);
-    for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i].trim();
-      // Skip short sentences and punctuation
-      if (sentence.length < 10) continue;
-
-      // Look for duplicate of this sentence later in the text
-      for (let j = i + 1; j < sentences.length; j++) {
-        if (sentences[i] === sentences[j]) {
-          // Found duplicate - remove it by setting to empty
-          sentences[j] = "";
-          console.log("Removed duplicate sentence:", sentence.substring(0, 30));
-        }
-      }
-    }
-
-    // Rejoin without empty entries
-    cleanedText = sentences.filter((s) => s).join("");
-
-    // Check for exact duplication of bullet points (common in your responses)
-    const bulletPoints =
-      cleanedText.match(/\*\s+\*\*[^*]+\*\*:[^*.]+(\.|\n)/g) || [];
-    for (let i = 0; i < bulletPoints.length; i++) {
-      const point = bulletPoints[i].trim();
-      if (point.length < 10) continue;
-
-      // Count occurrences
-      const regex = new RegExp(escapeRegExp(point), "g");
-      const matches = cleanedText.match(regex) || [];
-
-      if (matches.length > 1) {
-        // Replace second+ occurrences
-        cleanedText = cleanedText.replace(regex, (match, offset) => {
-          // Keep the first occurrence, remove duplicates
-          return offset === cleanedText.indexOf(point) ? match : "";
-        });
-        console.log("Removed duplicate bullet point");
-      }
-    }
-
-    return cleanedText;
+    // This function is no longer needed as deduplication is handled by the backend
+    return text;
   }
+  */
 
   // Helper to escape special regex characters
   function escapeRegExp(string) {
@@ -399,16 +357,24 @@ export default function ChatInterface() {
               try {
                 const completionData = JSON.parse(dataContent);
 
-                if (completionData.done) {
-                  console.log("Done event confirmed, updating message state");
-                  // IMPORTANT: Don't update content again, just mark as done
+                if (completionData.done && completionData.fullText) {
+                  console.log("Done event confirmed, using cleaned fullText from backend");
+                  // Use the fullText from backend which has been properly deduplicated
+                  const finalText = completionData.fullText;
+                  
                   setMessages((prev) => {
                     const updated = prev.map((msg) =>
                       msg.id === streamingMessageId
                         ? {
                             ...msg,
+                            content: isContactForm
+                              ? {
+                                  text: finalText,
+                                  format: "contact",
+                                  data: createDefaultContactData(),
+                                }
+                              : finalText,
                             isStreaming: false,
-                            // Don't update content here - it's already been updated by streaming chunks
                           }
                         : msg
                     );
@@ -440,12 +406,8 @@ export default function ChatInterface() {
               );
 
               // Add to accumulated text
-              if (!accumulatedText.endsWith(textChunk)) {
-                accumulatedText += textChunk;
-              } else {
-                console.log("Duplicate chunk detected, skipping");
-              }
-              accumulatedText = removeDuplicatedSentences(accumulatedText);
+              accumulatedText += textChunk;
+              // Deduplication is now handled by backend
               // Check for contact information patterns
               const containsContactInfo =
                 textChunk.includes("contact") ||
@@ -467,11 +429,11 @@ export default function ChatInterface() {
                           ...msg,
                           content: isContactForm
                             ? {
-                                text: deduplicate(accumulatedText),
+                                text: accumulatedText,
                                 format: "contact",
                                 data: createDefaultContactData(),
                               }
-                            : deduplicate(accumulatedText),
+                            : accumulatedText,
                           isStreaming: true,
                         }
                       : msg
@@ -557,36 +519,12 @@ export default function ChatInterface() {
       });
     }
   };
+  // Deduplication is now handled by the backend
+  /*
   function removeDuplicatedSentences(text) {
-    if (!text || text.length < 50) return text;
-
-    // Split text into sentences for analysis
-    const sentences = text.split(/([.!?]\s+)/);
-    const uniqueSentences = [];
-    const seen = new Set();
-
-    for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i];
-      // Skip very short segments as they might be punctuation
-      if (sentence.length < 5) {
-        uniqueSentences.push(sentence);
-        continue;
-      }
-
-      // Check if we've seen this sentence before
-      if (!seen.has(sentence)) {
-        seen.add(sentence);
-        uniqueSentences.push(sentence);
-      } else {
-        console.log(
-          "Removed duplicate sentence:",
-          sentence.substring(0, 20) + "..."
-        );
-      }
-    }
-
-    return uniqueSentences.join("");
+    return text;
   }
+  */
   // Handle send message - uses sendMessageToApi
   const handleSendMessage = async (e) => {
     e?.preventDefault(); // Make preventDefault optional for suggestion clicks
