@@ -28,10 +28,14 @@ import Modal from "../shared/Modal";
 import RemainingRequests from "./RemainingRequests";
 import ChatHistorySidebar from "../shared/ChatHistorySidebar";
 import useConversationHistory from "@/lib/utils/hooks/useConversationHistory";
+import BackendLoadingScreen from "../shared/BackendLoadingScreen";
 
 const DEBUG = false;
 
 export default function ChatInterface() {
+  // Backend readiness state
+  const [isBackendReady, setIsBackendReady] = useState(false);
+  
   // Message and UI state
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -40,7 +44,6 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isModal2Open, setIsModal2Open] = useState(false);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState("NORMAL");
   const [remaining, setRemaining] = useState(15);
@@ -93,10 +96,12 @@ export default function ChatInterface() {
     }
   }, [history]);
 
-  // Fetch remaining requests on component mount
+  // Fetch remaining requests only when backend is ready
   useEffect(() => {
-    fetchRemainingRequests();
-  }, []);
+    if (isBackendReady) {
+      fetchRemainingRequests();
+    }
+  }, [isBackendReady]);
 
   // Close style menu when clicking outside
   useEffect(() => {
@@ -182,10 +187,6 @@ export default function ChatInterface() {
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
-      if (isFirstMessage) {
-        setIsModal2Open(true);
-        setIsFirstMessage(false);
-      }
       const response = await fetch(`${apiUrl}/api/remaining`, {
         signal: controller.signal,
         headers: {
@@ -234,9 +235,9 @@ export default function ChatInterface() {
   const handleSuggestionSelect = (text) => {
     debugLog("Suggestion selected:", text);
 
-    // Don't proceed if already busy
-    if (isAiTyping || isLoading || remaining <= 0) {
-      debugLog("Cannot process suggestion - busy or rate limited");
+    // Don't proceed if already busy or backend not ready
+    if (isAiTyping || isLoading || remaining <= 0 || !isBackendReady) {
+      debugLog("Cannot process suggestion - busy, rate limited, or backend not ready");
       return;
     }
 
@@ -318,10 +319,6 @@ export default function ChatInterface() {
       const controller = new AbortController();
       timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      if (isFirstMessage) {
-        setIsModal2Open(true);
-        setIsFirstMessage(false);
-      }
       // Start the streaming request
       response = await fetch(`${apiUrl}/api/chat/stream`, {
         method: "POST",
@@ -594,7 +591,7 @@ export default function ChatInterface() {
   // Handle send message - uses sendMessageToApi
   const handleSendMessage = async (e) => {
     e?.preventDefault(); // Make preventDefault optional for suggestion clicks
-    if (!newMessage.trim() || isLoading || isAiTyping || remaining <= 0) return;
+    if (!newMessage.trim() || isLoading || isAiTyping || remaining <= 0 || !isBackendReady) return;
 
     // Add user message to chat
     const userMessage = {
@@ -643,9 +640,13 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative">
-      {/* Header */}
-      <ChatHeader onHistoryClick={handleHistoryClick} />
+    <>
+      {/* Backend Loading Screen */}
+      <BackendLoadingScreen onBackendReady={() => setIsBackendReady(true)} />
+      
+      <div className="h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative">
+        {/* Header */}
+        <ChatHeader onHistoryClick={handleHistoryClick} />
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 mt-16">
@@ -700,17 +701,6 @@ export default function ChatInterface() {
           free tier limits.
         </p>
       </Modal>
-      {/* Delayed Response Modal */}
-      <Modal
-        isOpen={isModal2Open}
-        onClose={() => setIsModal2Open(false)}
-        title="Delayed Response"
-      >
-        <p>
-          First message may take 30-60 seconds to process due to using free tier
-          of Render
-        </p>
-      </Modal>
       {/* Chat History Sidebar */}
       <ChatHistorySidebar
         isOpen={isHistorySidebarOpen}
@@ -743,12 +733,12 @@ export default function ChatInterface() {
                   dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 
                   outline-none transition-all shadow-inner pb-14 pl-4 pt-4 
                   ${
-                    isAiTyping || isLoading || remaining <= 0
+                    isAiTyping || isLoading || remaining <= 0 || !isBackendReady
                       ? "opacity-60 cursor-not-allowed"
                       : ""
                   }`}
                 placeholder={getConnectionMessage()}
-                disabled={isAiTyping || isLoading || remaining <= 0}
+                disabled={isAiTyping || isLoading || remaining <= 0 || !isBackendReady}
               />
 
               {/* In-text controls */}
@@ -835,11 +825,11 @@ export default function ChatInterface() {
                 ${
                   isAiTyping
                     ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer shadow-md hover:shadow-lg"
-                    : !newMessage.trim() || remaining <= 0
+                    : !newMessage.trim() || remaining <= 0 || !isBackendReady
                     ? "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed"
                     : "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer"
                 }`}
-                disabled={!isAiTyping && (!newMessage.trim() || remaining <= 0)}
+                disabled={!isAiTyping && (!newMessage.trim() || remaining <= 0 || !isBackendReady)}
                 title={isAiTyping ? "Stop AI" : "Send Message"}
               >
                 {isAiTyping ? (
@@ -876,5 +866,6 @@ export default function ChatInterface() {
         </form>
       </div>
     </div>
+    </>
   );
 }
