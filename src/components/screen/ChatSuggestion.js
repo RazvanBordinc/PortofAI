@@ -66,10 +66,10 @@ export default function ChatSuggestion({ onSelectSuggestion, distance }) {
         animate="show"
         variants={containerVariants}
       >
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 pl-1">
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 pl-1 hidden sm:block">
           SUGGESTED QUESTIONS
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center sm:justify-start">
           {suggestions.map((suggestion) => (
             <motion.button
               key={suggestion.id}
@@ -77,13 +77,15 @@ export default function ChatSuggestion({ onSelectSuggestion, distance }) {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => handleSuggestionClick(suggestion.text)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full 
+                text-xs sm:text-sm font-medium
                 text-black dark:text-white shadow-sm transition-all duration-300
-                border border-white/20 dark:border-slate-700/50 hover:shadow-md cursor-pointer`}
+                border border-white/20 dark:border-slate-700/50 hover:shadow-md cursor-pointer
+                whitespace-nowrap`}
               type="button" // Explicitly setting button type to avoid form submission
             >
-              <span className="opacity-70">{suggestion.icon}</span>
-              <span>{suggestion.text}</span>
+              <span className="opacity-70 hidden sm:inline">{suggestion.icon}</span>
+              <span className="truncate max-w-[100px] sm:max-w-none">{suggestion.text}</span>
             </motion.button>
           ))}
         </div>

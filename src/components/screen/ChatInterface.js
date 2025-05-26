@@ -357,10 +357,9 @@ export default function ChatInterface() {
               try {
                 const completionData = JSON.parse(dataContent);
 
-                if (completionData.done && completionData.fullText) {
-                  console.log("Done event confirmed, using cleaned fullText from backend");
+                if (completionData.done) {
                   // Use the fullText from backend which has been properly deduplicated
-                  const finalText = completionData.fullText;
+                  const finalText = completionData.fullText || accumulatedText;
                   
                   setMessages((prev) => {
                     const updated = prev.map((msg) =>
@@ -589,12 +588,12 @@ export default function ChatInterface() {
       <div className="flex-1 overflow-y-auto p-4 mt-16">
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-12">
+            <div className="flex flex-col items-center justify-center h-full py-8 sm:py-12 px-4">
               <LogoAnimationSvg />
-              <h3 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-2 mt-4">
+              <h3 className="text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-200 mb-2 mt-4 text-center">
                 Welcome to the PortofAI Chat
               </h3>
-              <p className="text-center text-slate-600 dark:text-slate-400 max-w-md mb-6">
+              <p className="text-center text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xs sm:max-w-md mb-6">
                 Ask me anything about my skills, projects, or experience.
                 I&apos;m here to help!
               </p>
