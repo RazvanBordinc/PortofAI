@@ -5,10 +5,12 @@ import LogoAnimationSvg from "./LogoAnimationSvg";
 
 export default function BackendLoadingScreen({ onBackendReady }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Initializing AI Assistant");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Initializing AI Assistant"
+  );
   const [progress, setProgress] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5189";
 
   useEffect(() => {
@@ -18,12 +20,12 @@ export default function BackendLoadingScreen({ onBackendReady }) {
     let startTime = Date.now();
     let retryCount = 0;
     const maxRetries = 20; // 20 retries * 3 seconds = 60 seconds max
-    
+
     // Update elapsed time every second
     const timeIntervalId = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setElapsedTime(elapsed);
-      
+
       // Update progress based on elapsed time (up to 90% in 60 seconds)
       const progressValue = Math.min(90, (elapsed / 60) * 90);
       setProgress(progressValue);
@@ -40,9 +42,9 @@ export default function BackendLoadingScreen({ onBackendReady }) {
       "Starting up (free tier takes ~60s)",
       "Thank you for your patience",
       "Configuring AI personality",
-      "Loading your conversation history"
+      "Loading your conversation history",
     ];
-    
+
     let messageIndex = 0;
     messageIntervalId = setInterval(() => {
       messageIndex = (messageIndex + 1) % messages.length;
@@ -53,7 +55,7 @@ export default function BackendLoadingScreen({ onBackendReady }) {
       try {
         const controller = new AbortController();
         timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout per request
-        
+
         const response = await fetch(`${apiUrl}/api/health`, {
           method: "GET",
           signal: controller.signal,
@@ -61,19 +63,19 @@ export default function BackendLoadingScreen({ onBackendReady }) {
             "Cache-Control": "no-cache",
           },
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (response.ok) {
           // Backend is ready!
           setProgress(100);
           setLoadingMessage("Ready to chat!");
-          
+
           // Clear all intervals
           clearInterval(intervalId);
           clearInterval(messageIntervalId);
           clearInterval(timeIntervalId);
-          
+
           // Wait a moment to show 100% progress
           setTimeout(() => {
             setIsLoading(false);
@@ -81,28 +83,30 @@ export default function BackendLoadingScreen({ onBackendReady }) {
               onBackendReady();
             }
           }, 500);
-          
+
           return true;
         }
       } catch (error) {
         console.log("Backend not ready yet, retrying...", error.message);
       }
-      
+
       retryCount++;
       if (retryCount >= maxRetries) {
         // After 60 seconds, show error state
-        setLoadingMessage("Server is taking longer than expected. Please refresh the page.");
+        setLoadingMessage(
+          "Server is taking longer than expected. Please refresh the page."
+        );
         clearInterval(intervalId);
         clearInterval(messageIntervalId);
         clearInterval(timeIntervalId);
       }
-      
+
       return false;
     };
 
     // Start checking immediately
     checkBackendHealth();
-    
+
     // Then check every 3 seconds
     intervalId = setInterval(checkBackendHealth, 3000);
 
@@ -219,7 +223,10 @@ export default function BackendLoadingScreen({ onBackendReady }) {
               className="mt-8 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg max-w-sm"
             >
               <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                💡 <span className="font-medium">Did you know?</span> This AI assistant has real-time access to my latest GitHub projects and can answer questions about my skills, experience, and availability.
+                💡 <span className="font-medium">Did you know?</span> This AI
+                assistant has real-time access to my latest GitHub projects and
+                can answer questions about my skills, experience, and
+                availability.
               </p>
             </motion.div>
           )}
@@ -232,7 +239,8 @@ export default function BackendLoadingScreen({ onBackendReady }) {
               className="mt-8 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg max-w-sm"
             >
               <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                The server is taking longer than expected. Please refresh the page or try again later.
+                The server is taking longer than expected. Please refresh the
+                page or try again later.
               </p>
               <button
                 onClick={() => window.location.reload()}
