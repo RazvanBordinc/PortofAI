@@ -9,7 +9,7 @@
 [![Deployed on Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 
-![PortofAI Banner](./public/banner.png)
+![PortofAI Banner](./assets/banner.png)
 
 **An intelligent conversational interface to learn about me and my work in real-time, with data directly from GitHub.**
 
